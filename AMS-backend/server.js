@@ -6,6 +6,7 @@ const { PORT } = require('./config/env.config');
 
 const authRoutes = require('./routes/authRoutes');
 
+
 const app = express();
 
 // Middleware
@@ -13,8 +14,14 @@ app.use(bodyParser.json());
 app.use(helmet());
 app.use(express.json());
 
+
 // Routes
-app.use('/api/', authRoutes);
+app.use('/api/student', authRoutes)
+app.use('/api/teacher', authRoutes)
+app.use('/api/teacherPassword', authRoutes)
+
+
+
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -26,6 +33,8 @@ app.use((err, req, res, next) => {
 
 // Connect Database
 connectDB();
+
+
 
 // Start Server
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
