@@ -5,6 +5,7 @@ const connectDB = require('./config/db');
 const { PORT } = require('./config/env.config');
 
 const authRoutes = require('./routes/authRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes')
 
 
 const app = express();
@@ -19,6 +20,12 @@ app.use(express.json());
 app.use('/api/student', authRoutes)
 app.use('/api/teacher', authRoutes)
 app.use('/api/teacherPassword', authRoutes)
+app.use('/api', attendanceRoutes)
+app.use('/api', attendanceRoutes)
+app.use('/api/fetch', attendanceRoutes)
+
+
+
 
 
 
