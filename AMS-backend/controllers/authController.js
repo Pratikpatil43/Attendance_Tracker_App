@@ -30,6 +30,36 @@ const register = async (req, res) => {
     }
 };
 
+const registerTeacher = async (req, res) => {
+    const { teacherName, emailid, password, username } = req.body;
+
+    try {
+        // Check if the teacher already exists
+        const existingTeacher = await Teacher.findOne({ emailid });
+        if (existingTeacher) {
+            return res.status(400).json({ message: 'Teacher already exists!' });
+        }
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Save the new teacher
+        const newTeacher = new Teacher({
+            username,
+            teacherName,
+            emailid,
+            password: hashedPassword,
+        });
+        await newTeacher.save();
+
+        return res.status(201).json({ message: 'Teacher registered successfully!' });
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+
 
 // Login User (Student/Teacher)
 const login = async (req, res) => {
@@ -127,4 +157,4 @@ const updatePassword = async (req, res) => {
 };
 
 
-module.exports = { register,login,loginTeacher,updatePassword }; // Exporting register as an object
+module.exports = { register,login,loginTeacher,updatePassword,registerTeacher }; // Exporting register as an object

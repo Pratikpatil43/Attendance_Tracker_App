@@ -1,16 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const { register,login,loginTeacher,updatePassword } = require('../controllers/authController'); // Import register controller
+const {
+  register,
+  login,
+  loginTeacher,
+  updatePassword,
+  registerTeacher} = require('../controllers/authController');
 
-// Route to register a student
-router.post('/register', register);
-router.post('/login', login);
+// Authentication Routes
 
-//Route to register Teacher
-router.post('/loginTeacher',loginTeacher)
+// Student registration and login routes
+router.post('/register', register); // Register a student
+router.post('/login', login); // Login a student
 
+// Teacher registration and login routes
+router.post('/registerTeacher', registerTeacher); // Register a teacher
+router.post('/loginTeacher', loginTeacher); // Login a teacher
 
-// Update password route for teacher
-router.put('/updatePassword', updatePassword);
+// Route to update a teacher's password
+router.put('/updatePassword', updatePassword); // Update password for a teacher
 
 module.exports = router;

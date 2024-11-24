@@ -8,6 +8,8 @@ const authRoutes = require('./routes/authRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes')
 
 
+
+
 const app = express();
 
 // Middleware
@@ -15,14 +17,19 @@ app.use(bodyParser.json());
 app.use(helmet());
 app.use(express.json());
 
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/auth', authRoutes);
 
 // Routes
-app.use('/api/student', authRoutes)
-app.use('/api/teacher', authRoutes)
-app.use('/api/teacherPassword', authRoutes)
-app.use('/api', attendanceRoutes)
-app.use('/api', attendanceRoutes)
-app.use('/api/fetch', attendanceRoutes)
+// app.use('/api/student', studentRoutes); // All student-related routes
+// app.use('/api/teacher', teacherRoutes); // All teacher-related routes
+// app.use('/api/teacher/register', teacherRoutes); // Specific teacher registration routes
+// app.use('/api/teacher/password', teacherRoutes); // Teacher password-related routes
+// app.use('/api/attendance', attendanceRoutes); // General attendance routes
+// app.use('/api/mark-attendance', attendanceRoutes); // Routes for marking attendance
+// app.use('/api/fetch-attendance', attendanceRoutes); // Routes for fetching attendance
+// app.use('/api/teacher-attendance', teacherRoutes); // Teacher-specific attendance routes
+
 
 
 
