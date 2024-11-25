@@ -1,24 +1,27 @@
+// authMiddleware.js
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET } = require('../config/env.config');
+const Student = require('../models/studentModel'); // Adjust the model path as needed
 
-// Middleware to verify the token
+// Middleware to authenticate the user
 const authenticateUser = (req, res, next) => {
-    const token = req.header('Authorization')?.split(' ')[1]; // Extract token from "Bearer <token>"
-    
+    const token = req.headers.authorization?.split(" ")[1];
+
     if (!token) {
-        return res.status(401).json({ message: 'Access Denied. No token provided.' });
+        return res.status(401).json({ message: "Unauthorized" });
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded; // Attach decoded payload to the request
-        next(); // Proceed to the next middleware or route handler
-    } catch (err) {
-        console.error(err.message);
-        return res.status(403).json({ message: 'Invalid or expired token.' });
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = {
+            studentUSN: decoded.studentUSN,
+            branch: decoded.branch,
+            class: decoded.class,
+        };
+        next();
+    } catch (error) {
+        return res.status(401).json({ message: "Invalid token." });
     }
 };
-
 
 
 module.exports = authenticateUser;

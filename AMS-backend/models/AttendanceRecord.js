@@ -19,9 +19,12 @@ const AttendanceRecordSchema = new mongoose.Schema({
         enum: ['present', 'absent'],
         required: true,
     },
+    subject: {
+        type: String,  // Make sure this is String and required
+        required: true,
+    },
 });
 
-// Ensure uniqueness for the combination of session, student, and date
 AttendanceRecordSchema.index({ attendanceSessionId: 1, studentUSN: 1, date: 1 }, { unique: true });
 
 module.exports = mongoose.model('AttendanceRecord', AttendanceRecordSchema);

@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const AttendanceSession = require('../models/attendanceSessionModel'); // Attendance session model
-const StudentAttendance = require('../models/studentAttendanceModel'); // Student attendance model
-const AttendanceRecord = require('../models/AttendanceRecord')
+const addStudent = require('../models/addStudentModel'); // Student attendance model
+const AttendanceRecord = require('../models/AttendanceRecord');
+const studentAttendanceModel = require('../models/studentAttendanceModel');
 
 // Add Attendance Session
 const addAttendanceSession = async (req, res) => {
@@ -40,13 +41,13 @@ const addStudentToSession = async (req, res) => {
         }
 
         // Check if the student is already added to the session
-        const existingStudent = await StudentAttendance.findOne({ attendanceSessionId, studentUSN });
+        const existingStudent = await addStudent.findOne({ attendanceSessionId, studentUSN });
         if (existingStudent) {
             return res.status(400).json({ message: 'Student already added to this session.' });
         }
 
         // Add the student to the session
-        const studentAttendance = new StudentAttendance({
+        const studentAttendance = new addStudent({
             attendanceSessionId: attendanceSession._id,
             studentName,
             studentUSN,
@@ -78,7 +79,7 @@ const fetchstudentAtt = async (req, res) => {
         }
 
         // Fetch all students linked to this session
-        const fetchStudent = await StudentAttendance.find({ attendanceSessionId: attendanceSession._id });
+        const fetchStudent = await studentAttendanceModel.find({ attendanceSessionId: attendanceSession._id });
 
         // Sort students by the last two digits of studentUSN
         const sortedStudents = fetchStudent.sort((a, b) => {
@@ -99,44 +100,52 @@ const fetchstudentAtt = async (req, res) => {
 };
 
 
-
 const markStudentAttendance = async (req, res) => {
-    const { attendanceSessionId, studentUSN, date, attendanceStatus } = req.body;
+    const { attendanceSessionId, studentUSN, date, attendanceStatus, subject } = req.body;
 
     try {
-        // Validate inputs
-        if (!['present', 'absent'].includes(attendanceStatus)) {
+        // Validate attendance status
+        if (!['present', 'absent'].includes(attendanceStatus.toLowerCase())) {
             return res.status(400).json({ message: 'Invalid attendance status.' });
         }
 
-        if (!date) {
-            return res.status(400).json({ message: 'Date is required to mark attendance.' });
+        // Validate date format (DD/MM/YYYY)
+        const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+        if (!dateRegex.test(date)) {
+            return res.status(400).json({ message: 'Invalid date format. Use DD/MM/YYYY.' });
         }
+
+        // Convert date from DD/MM/YYYY to a UTC-normalized Date object
+        const [day, month, year] = date.split('/').map(Number);
+        const normalizedDate = new Date(Date.UTC(year, month - 1, day)); // Use Date.UTC to normalize to UTC
 
         // Check if the attendance session exists
         const attendanceSession = await AttendanceSession.findById(attendanceSessionId);
-
         if (!attendanceSession) {
             return res.status(404).json({ message: 'Attendance session not found.' });
         }
 
-        // Check if the student is enrolled in the session
-        const student = await StudentAttendance.findOne({ attendanceSessionId, studentUSN });
+        // Ensure the subject matches the session subject
+        if (attendanceSession.subject !== subject) {
+            return res.status(400).json({ message: 'Subject does not match the session subject.' });
+        }
 
+        // Check if the student is enrolled in the session
+        const student = await addStudent.findOne({ attendanceSessionId, studentUSN });
         if (!student) {
             return res.status(404).json({ message: 'Student not found in the specified session.' });
         }
 
         // Check if attendance for this student on this date already exists
-        const existingRecord = await AttendanceRecord.findOne({
+        const existingRecord = await studentAttendanceModel.findOne({
             attendanceSessionId,
             studentUSN,
-            date: new Date(date), // Ensure the date matches
+            date: normalizedDate, // Use normalized Date object for comparison
         });
 
         if (existingRecord) {
-            // Update the existing record
-            existingRecord.attendanceStatus = attendanceStatus;
+            // Update existing record
+            existingRecord.attendanceStatus = attendanceStatus.toLowerCase();
             await existingRecord.save();
 
             return res.status(200).json({
@@ -146,11 +155,12 @@ const markStudentAttendance = async (req, res) => {
         }
 
         // Create a new attendance record
-        const attendanceRecord = new AttendanceRecord({
+        const attendanceRecord = new studentAttendanceModel({
             attendanceSessionId,
             studentUSN,
-            date,
-            attendanceStatus,
+            date: normalizedDate, // Save as a UTC-normalized Date object
+            attendanceStatus: attendanceStatus.toLowerCase(),
+            subject,
         });
 
         await attendanceRecord.save();
@@ -160,18 +170,14 @@ const markStudentAttendance = async (req, res) => {
             record: attendanceRecord,
         });
     } catch (error) {
-        console.error(error.message);
-
-        // Handle unique constraint violation (MongoDB duplicate key error)
-        if (error.code === 11000) {
-            return res.status(400).json({
-                message: 'Attendance already marked for this student on this date.',
-            });
-        }
-
+        console.error("Error: ", error);
         return res.status(500).json({ message: 'Server error. Could not mark attendance.' });
     }
 };
+
+
+
+
 
 
 

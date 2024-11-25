@@ -6,6 +6,7 @@ const { PORT } = require('./config/env.config');
 
 const authRoutes = require('./routes/authRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes')
+const studentRoutes = require('./routes/studentRoutes')
 
 
 
@@ -18,6 +19,7 @@ app.use(helmet());
 app.use(express.json());
 
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/student', studentRoutes);
 app.use('/api/auth', authRoutes);
 
 // Routes

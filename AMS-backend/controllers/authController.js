@@ -3,10 +3,12 @@ const Student = require('../models/studentModel'); // Ensure the correct path
 const jwt = require('jsonwebtoken');
 const {JWT_SECRET} = require('../config/env.config');
 const Teacher = require('../models/teacherModel');
+const attendanceSession = require('../models/attendanceSessionModel')
+const StudentAttendance = require('../models/studentAttendanceModel')
 
 // Register User (Student)
 const register = async (req, res) => {
-    const { studentName, emailid, password, studentUSN } = req.body;
+    const { studentName, emailid, password, studentUSN, branch, class: studentClass } = req.body;  // Extract branch and class from req.body
 
     try {
         // Hash the password
@@ -18,9 +20,37 @@ const register = async (req, res) => {
             return res.status(400).json({ message: 'Student already exists!' });
         }
 
+        // Find the attendance session that corresponds to the provided USN
+        const studentAttendance = await StudentAttendance.findOne({ studentUSN }).populate('attendanceSessionId');
 
-        // Save the new student
-        const newStudent = new Student({ studentName, emailid, studentUSN, password: hashedPassword });
+        // If no attendance session is found for the provided studentUSN
+        if (!studentAttendance || !studentAttendance.attendanceSessionId) {
+            return res.status(400).json({
+                message: 'No attendance session found for the provided USN. Please ensure the USN is valid.',
+            });
+        }
+
+        // Extract the branch and class from the populated AttendanceSession
+        const { branch: attendanceBranch, class: attendanceClass } = studentAttendance.attendanceSessionId;
+
+        // Check if the provided branch and class match the ones in the attendance session
+        if (attendanceBranch !== branch || attendanceClass !== studentClass) {
+            return res.status(400).json({
+                message: 'The branch and class do not match the attendance session records.',
+            });
+        }
+
+        // Save the new student with branch and class
+        const newStudent = new Student({
+            studentName,
+            emailid,
+            studentUSN,
+            branch, // Use the branch from the request body
+            class: studentClass, // Use the class from the request body
+            password: hashedPassword,
+        });
+
+        // Save the new student to the database
         await newStudent.save();
 
         return res.status(201).json({ message: 'Student registered successfully!' });
@@ -29,6 +59,10 @@ const register = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
+
+
+
 
 const registerTeacher = async (req, res) => {
     const { teacherName, emailid, password, username } = req.body;
@@ -63,22 +97,33 @@ const registerTeacher = async (req, res) => {
 
 // Login User (Student/Teacher)
 const login = async (req, res) => {
-    const { emailid, password } = req.body;
+    const { studentUSN, password } = req.body;
 
     try {
-        const user =  await Student.findOne({ emailid });
-        if (!user) return res.status(404).json({ message: 'User not found.' });
+        // Find student by USN
+        const student = await Student.findOne({ studentUSN });
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(401).json({ message: 'Invalid credentials.' });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found.' });
+        }
 
-        const payload = { id: user._id, studentName: user.studentName };
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
+        // Compare the password
+        const isMatch = await bcrypt.compare(password, student.password);
 
-        res.status(200).json({ emailid, token });
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials.' });
+        }
+
+        // Create JWT token
+        const token = jwt.sign({ studentUSN: student.studentUSN }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        return res.status(200).json({
+            message: 'Login successful',
+            token,
+        });
     } catch (error) {
         console.error(error.message);
-        res.status(500).json({ message: 'Server Error' });
+        return res.status(500).json({ message: 'Server error during login.' });
     }
 };
 

@@ -1,13 +1,15 @@
 const mongoose = require("mongoose");
 
 const attendanceSchema = new mongoose.Schema({
-    studentName:{ type:String, required:true },
-    studentUSN:{ type:String, ref:'Student', required:true },
-    subject: { type:String, required:true },
-    branch: { type:String, required:true },
-    class: { type:String, required:true },
-    date: { type:Date, required:true },
-    status: { type:String, enum:['Present','Absent'],required:true },
+    attendanceSessionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        ref: 'AttendanceSession',
+    },
+    subject: { type:String, ref:'AttendanceSession', required:true },
+    branch: { type:String, ref:'AttendanceSession', required:true },
+    class: { type:String, ref:'AttendanceSession', required:true },
+    status: { type:String, ref:'AttendanceRecord',enum:['Present','Absent'],required:true },
 
 });
 
