@@ -6,6 +6,7 @@ import FetchHod from '../components/Dashboard/HODHandler/FetchHod'; // Fetch HOD
 import { Box, Toolbar } from '@mui/material';
 import AddFaculty from '../components/Dashboard/FacultyHandler/addFaculty';
 import Requests from '../components/Dashboard/FacultyHandler/FetchFaculty'
+import FetchFaculty from '../components/Dashboard/FacultyHandler/FetchFaculty';
 
 const Dashboard = () => {
     return (
@@ -28,6 +29,7 @@ const Dashboard = () => {
                     <Route path="fetch-hod" element={<FetchHod />} />
 
                     <Route path="add-faculty" element={<AddFaculty />} />
+                    <Route path="fetch-faculty" element={<FetchFaculty />} />
                     <Route path="hod-requests" element={<Requests />} />
 
                 </Routes>

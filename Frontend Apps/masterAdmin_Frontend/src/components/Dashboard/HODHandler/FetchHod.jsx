@@ -7,73 +7,85 @@ import { Container, Row, Col, Card, Button } from "react-bootstrap";
 const decodeJWT = (token) => {
   const base64Url = token.split('.')[1];
   const base64 = base64Url.replace('-', '+').replace('_', '/');
-  const jsonPayload = decodeURIComponent(
-    atob(base64)
-      .split('')
-      .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-      .join('')
-  );
+  const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
   return JSON.parse(jsonPayload);
 };
 
 const FetchHod = () => {
-  const [hods, setHods] = useState([]); // State for storing HODs
-  const [error, setError] = useState(null); // State for handling errors
+  const [hods, setHods] = useState([]);  // State to hold the list of HODs
+  const [error, setError] = useState("");  // State to hold error message
 
-  // Fetch HODs data
-  const fetchHods = async () => {
-    try {
-      const token = sessionStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found.");
+  useEffect(() => {
+    const fetchHods = async () => {
+      try {
+        const token = sessionStorage.getItem("token");
+        if (!token) {
+          throw new Error("No authentication token found.");
+        }
 
-      const response = await axios.get("http://localhost:5000/api/masterAdmin/hod/getHod", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+        // Decode the JWT token using the custom decodeJWT function
+        const decodedToken = decodeJWT(token);
+        console.log("Decoded Token:", decodedToken); // Log the decoded token
+        if (!decodedToken || !decodedToken.masterAdmin) {
+          throw new Error("Invalid token: masterAdminId missing.");
+        }
 
-      if (response.data && Array.isArray(response.data.hods)) {
-        setHods(response.data.hods);
-      } else {
-        throw new Error("Invalid HODs data format.");
+        // Fetch HODs using the retrieved masterAdminId
+        const hodsResponse = await axios.get(
+          `http://localhost:5000/api/masterAdmin/hod/getHod/${decodedToken.masterAdmin}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        console.log("HODs Response:", hodsResponse.data); // Log the HODs data
+
+        // Check if the response data has the required format and set the state
+        if (hodsResponse.data && Array.isArray(hodsResponse.data.hods)) {
+          setHods(hodsResponse.data.hods);  // Update the state with fetched HODs
+        } else {
+          throw new Error("Invalid HODs data format");
+        }
+      } catch (err) {
+        setError("Failed to fetch HODs: " + err.message);
       }
-    } catch (err) {
-      setError("Failed to fetch HODs: " + err.message);
-    }
-  };
+    };
 
-  // Handle delete
+    fetchHods();
+  }, []);  // Empty dependency array to run once on component mount
+
   const handleDelete = async (id) => {
     try {
       const token = sessionStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found.");
+      if (!token) {
+        throw new Error("No authentication token found.");
+      }
 
+      // Decode the JWT token using the custom decodeJWT function
       const decodedToken = decodeJWT(token);
       if (!decodedToken || !decodedToken.masterAdminId) {
         throw new Error("Invalid token: masterAdminId missing.");
       }
 
+      // Delete HOD using the id and token for authentication
       await axios.delete(`http://localhost:5000/api/masterAdmin/hod/remove/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      setHods((prevHods) => prevHods.filter((hod) => hod._id !== id)); // Update HODs list
+      setHods(hods.filter((hod) => hod._id !== id)); // Remove deleted HOD from the list
     } catch (err) {
       setError("Failed to delete HOD: " + err.message);
     }
   };
 
-  // Handle update (placeholder)
   const handleUpdate = (id) => {
     console.log("Updating HOD with ID:", id);
   };
-
-  // Use useEffect to fetch HODs on component mount
-  useEffect(() => {
-    fetchHods();
-  }, []); // Empty dependency array ensures it runs only once on mount
 
   return (
     <Container className="mt-5">
@@ -104,7 +116,7 @@ const FetchHod = () => {
             </tr>
           </thead>
           <tbody>
-            {hods.map((hod) => (
+            {Array.isArray(hods) && hods.map((hod) => (
               <tr key={hod._id}>
                 <td>{hod.name}</td>
                 <td>{hod.username}</td>
@@ -119,7 +131,7 @@ const FetchHod = () => {
                   </button>
                   <button
                     className="btn btn-danger"
-                    onClick={() => handleDelete(hod._id)}
+                    onClick={() => handleDelete(hod._id)} // Use '_id' for delete
                   >
                     <BsTrash />
                   </button>
@@ -133,7 +145,7 @@ const FetchHod = () => {
       {/* Mobile View (Cards) */}
       <div className="d-block d-md-none">
         <Row>
-          {hods.map((hod) => (
+          {Array.isArray(hods) && hods.map((hod) => (
             <Col key={hod._id} xs={12} md={6} lg={4} className="mb-4">
               <Card>
                 <Card.Body>
@@ -153,7 +165,7 @@ const FetchHod = () => {
                   </Button>
                   <Button
                     variant="danger"
-                    onClick={() => handleDelete(hod._id)}
+                    onClick={() => handleDelete(hod._id)} // Use '_id' for delete
                   >
                     <BsTrash />
                   </Button>
