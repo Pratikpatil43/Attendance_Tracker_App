@@ -27,20 +27,28 @@ Monitoring student data
 
 
 To run the WebApp
+
 Follow the below Steps:
 
 step1:
+
 In backend folder create .env file and add this : 
 
 PORT= 'your port number'
+
 MONGO_URI= 'your mongodb URI connection string'
+
 JWT_SECRET= 'your JWT secret'
 
 
 step 2:
+
 Backend/npm install
+
 Backend/npm start
 
 step 3:
+
 Frontend_Apps/Main DashBoardPage_Frontend/attendance-tracker/npm install
+
 Frontend_Apps/Main DashBoardPage_Frontend/attendance-tracker/npm run dev
